@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ElFanan-Supplementsd</title>
+    <title>ElFanan-Supplements</title>
     <link rel="icon" href="alfannan.png" type="image/svg+xml">
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <!-- يمكنك إضافة المزيد من مكتبات Firebase حسب الحاجة -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;700&display=swap');
@@ -280,7 +281,8 @@
         @media (max-width: 700px) {
             .container { padding: 8px; }
             .navbar { flex-direction: column; height: auto; padding: 0 4px; }
-            .navbar .logo { font-size: 1.3rem; }
+            .navbar { font-size: 1.3rem; }
+            .logo { font-size: 2rem; }
             .navbar ul { gap: 6px; }
             .navbar li { font-size: 1.05rem; padding: 0 2px 2px 2px; }
         }
@@ -289,7 +291,7 @@
 <body>
     <nav class="navbar">
         <div class="logo">ElFanan-Supplements </div>
-        <hr><hr><br>
+        
         <ul>
             <li data-section="creatine">Creatine</li>
             <li data-section="protein">Protein</li>
@@ -338,8 +340,10 @@
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const analytics = firebase.analytics(app);
-        // بيانات المنتجات (تخزين محلي)
-        let products = JSON.parse(localStorage.getItem('gymProducts') || '[]');
+        const db = firebase.firestore();
+
+        // --- المنتجات من Firestore ---
+        let products = [];
         let editingProductIndex = null;
         const productTypes = [
             {key: 'creatine', label: 'Creatine'},
@@ -349,6 +353,48 @@
             {key: 'accessories', label: 'Accessories'},
             {key: 'offers', label: 'Offers'}
         ];
+
+        // جلب المنتجات من Firestore
+        async function fetchProducts() {
+            const snapshot = await db.collection('products').get();
+            products = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
+        }
+        // حفظ منتج جديد أو تعديل منتج
+        async function saveProductData(prod) {
+            if(editingProductIndex !== null) {
+                // تعديل منتج
+                const prodId = products[editingProductIndex].id;
+                await db.collection('products').doc(prodId).set(prod);
+                editingProductIndex = null;
+            } else {
+                // إضافة منتج جديد
+                await db.collection('products').add(prod);
+            }
+            await fetchProducts();
+            hideProductForm();
+            renderAdminProductsList();
+        }
+        // حذف منتج
+        window.deleteProduct = async function(i) {
+            if(confirm('هل أنت متأكد من حذف المنتج؟')) {
+                const prodId = products[i].id;
+                await db.collection('products').doc(prodId).delete();
+                await fetchProducts();
+                renderAdminProductsList();
+            }
+        }
+        // إخفاء/إظهار منتج
+        window.toggleHideProduct = async function(i) {
+            const prodId = products[i].id;
+            await db.collection('products').doc(prodId).update({hidden: !products[i].hidden});
+            await fetchProducts();
+            renderAdminProductsList();
+        }
+        // عند بدء الصفحة: جلب المنتجات ثم عرض قسم الكرياتين
+        (async function(){
+            await fetchProducts();
+            renderProductsSection('creatine');
+        })();
         // --- سلايدر الصور وتكبيرها ---
         function showImageModal(src) {
             let modal = document.createElement('div');
@@ -371,10 +417,6 @@
             before = parseFloat(before); after = parseFloat(after);
             if(!before || !after || after >= before) return '';
             return Math.round(100 * (before - after) / before);
-        }
-        // تحديث التخزين المحلي
-        function saveProducts() {
-            localStorage.setItem('gymProducts', JSON.stringify(products));
         }
         // عرض المنتجات حسب النوع
         function renderProductsSection(typeKey) {
@@ -573,17 +615,6 @@
         function hideProductForm() {
             document.getElementById('productFormContainer').innerHTML = '';
         }
-        function saveProductData(prod) {
-            if(editingProductIndex !== null) {
-                products[editingProductIndex] = prod;
-                editingProductIndex = null;
-            } else {
-                products.push(prod);
-            }
-            saveProducts();
-            hideProductForm();
-            renderAdminProductsList();
-        }
         // عرض المنتجات في لوحة الأدمن
         function renderAdminProductsList() {
             const list = document.getElementById('adminProductsList');
@@ -622,23 +653,9 @@
             });
             list.innerHTML = html;
         }
-        // زر إخفاء/إظهار المنتج
-        window.toggleHideProduct = function(i) {
-            products[i].hidden = !products[i].hidden;
-            saveProducts();
-            renderAdminProductsList();
-        }
         // تعديل منتج
         window.editProduct = function(i) {
             showProductForm(i);
-        }
-        // حذف منتج
-        window.deleteProduct = function(i) {
-            if(confirm('هل أنت متأكد من حذف المنتج؟')) {
-                products.splice(i,1);
-                saveProducts();
-                renderAdminProductsList();
-            }
         }
         // ربط أقسام الناب بار
         document.querySelectorAll('.navbar li[data-section]').forEach(li => {
