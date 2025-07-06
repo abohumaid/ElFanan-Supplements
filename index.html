@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ElFanan-Supplements</title>
     <link rel="icon" href="alfannan.png" type="image/svg+xml">
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <!-- يمكنك إضافة المزيد من مكتبات Firebase حسب الحاجة -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;700&display=swap');
         body {
@@ -325,76 +320,54 @@
             <div class="error" id="adminLoginError"></div>
         </div>
     </div>
+    <!-- Firebase v9+ Modular CDN -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics.js";
+      import { getFirestore, collection, addDoc, setDoc, doc, deleteDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyABBNyziST2TOTr1YQv7nEAq_V1LVoymo0",
+        authDomain: "abo-elela.firebaseapp.com",
+        projectId: "abo-elela",
+        storageBucket: "abo-elela.firebasestorage.app",
+        messagingSenderId: "1094481849658",
+        appId: "1:1094481849658:web:111289c004cfcfc9ef7403",
+        measurementId: "G-V22KTTMVD8"
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+      const db = getFirestore(app);
+
+      // --- المنتجات من Firestore ---
+      let products = [];
+      let editingProductIndex = null;
+      let currentSection = 'creatine';
+      let isAdminPanelOpen = false;
+      const productTypes = [
+        {key: 'creatine', label: 'Creatine'},
+        {key: 'protein', label: 'Protein'},
+        {key: 'gainer', label: 'Gainer'},
+        {key: 'citrulline', label: 'Citrulline'},
+        {key: 'accessories', label: 'Accessories'},
+        {key: 'offers', label: 'Offers'}
+      ];
+      const productsCol = collection(db, "products");
+
+      // الاستماع اللحظي للمنتجات
+      onSnapshot(productsCol, (snapshot) => {
+        products = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        renderProductsSection(currentSection);
+        if (isAdminPanelOpen) renderAdminProductsList();
+      });
+
+      // --- باقي الدوال (نفس الأسماء، لكن التعامل مع Firestore) ---
+      // ... انسخ هنا جميع دوال العرض والإضافة والتعديل والحذف، مع استبدال LocalStorage بعمليات Firestore كما في الرد السابق ...
+    </script>
     <script>
-        // --- تهيئة Firebase ---
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyABBNyziST2TOTr1YQv7nEAq_V1LVoymo0",
-            authDomain: "abo-elela.firebaseapp.com",
-            projectId: "abo-elela",
-            storageBucket: "abo-elela.firebasestorage.app",
-            messagingSenderId: "1094481849658",
-            appId: "1:1094481849658:web:111289c004cfcfc9ef7403",
-            measurementId: "G-V22KTTMVD8"
-        };
-        // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const analytics = firebase.analytics(app);
-        const db = firebase.firestore();
-
-        // --- المنتجات من Firestore ---
-        let products = [];
-        let editingProductIndex = null;
-        const productTypes = [
-            {key: 'creatine', label: 'Creatine'},
-            {key: 'protein', label: 'Protein'},
-            {key: 'gainer', label: 'Gainer'},
-            {key: 'citrulline', label: 'Citrulline'},
-            {key: 'accessories', label: 'Accessories'},
-            {key: 'offers', label: 'Offers'}
-        ];
-
-        // جلب المنتجات من Firestore
-        async function fetchProducts() {
-            const snapshot = await db.collection('products').get();
-            products = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
-        }
-        // حفظ منتج جديد أو تعديل منتج
-        async function saveProductData(prod) {
-            if(editingProductIndex !== null) {
-                // تعديل منتج
-                const prodId = products[editingProductIndex].id;
-                await db.collection('products').doc(prodId).set(prod);
-                editingProductIndex = null;
-            } else {
-                // إضافة منتج جديد
-                await db.collection('products').add(prod);
-            }
-            await fetchProducts();
-            hideProductForm();
-            renderAdminProductsList();
-        }
-        // حذف منتج
-        window.deleteProduct = async function(i) {
-            if(confirm('هل أنت متأكد من حذف المنتج؟')) {
-                const prodId = products[i].id;
-                await db.collection('products').doc(prodId).delete();
-                await fetchProducts();
-                renderAdminProductsList();
-            }
-        }
-        // إخفاء/إظهار منتج
-        window.toggleHideProduct = async function(i) {
-            const prodId = products[i].id;
-            await db.collection('products').doc(prodId).update({hidden: !products[i].hidden});
-            await fetchProducts();
-            renderAdminProductsList();
-        }
-        // عند بدء الصفحة: جلب المنتجات ثم عرض قسم الكرياتين
-        (async function(){
-            await fetchProducts();
-            renderProductsSection('creatine');
-        })();
         // --- سلايدر الصور وتكبيرها ---
         function showImageModal(src) {
             let modal = document.createElement('div');
@@ -417,6 +390,10 @@
             before = parseFloat(before); after = parseFloat(after);
             if(!before || !after || after >= before) return '';
             return Math.round(100 * (before - after) / before);
+        }
+        // تحديث التخزين المحلي
+        function saveProducts() {
+            localStorage.setItem('gymProducts', JSON.stringify(products));
         }
         // عرض المنتجات حسب النوع
         function renderProductsSection(typeKey) {
@@ -615,6 +592,17 @@
         function hideProductForm() {
             document.getElementById('productFormContainer').innerHTML = '';
         }
+        function saveProductData(prod) {
+            if(editingProductIndex !== null) {
+                products[editingProductIndex] = prod;
+                editingProductIndex = null;
+            } else {
+                products.push(prod);
+            }
+            saveProducts();
+            hideProductForm();
+            renderAdminProductsList();
+        }
         // عرض المنتجات في لوحة الأدمن
         function renderAdminProductsList() {
             const list = document.getElementById('adminProductsList');
@@ -653,9 +641,23 @@
             });
             list.innerHTML = html;
         }
+        // زر إخفاء/إظهار المنتج
+        window.toggleHideProduct = function(i) {
+            products[i].hidden = !products[i].hidden;
+            saveProducts();
+            renderAdminProductsList();
+        }
         // تعديل منتج
         window.editProduct = function(i) {
             showProductForm(i);
+        }
+        // حذف منتج
+        window.deleteProduct = function(i) {
+            if(confirm('هل أنت متأكد من حذف المنتج؟')) {
+                products.splice(i,1);
+                saveProducts();
+                renderAdminProductsList();
+            }
         }
         // ربط أقسام الناب بار
         document.querySelectorAll('.navbar li[data-section]').forEach(li => {
