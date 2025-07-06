@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ElFanan-Supplements</title>
+    <title>ElFanan-Supplementsd</title>
     <link rel="icon" href="alfannan.png" type="image/svg+xml">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;700&display=swap');
@@ -276,8 +276,7 @@
         @media (max-width: 700px) {
             .container { padding: 8px; }
             .navbar { flex-direction: column; height: auto; padding: 0 4px; }
-            .navbar  { font-size: 1.5rem; }
-            .logo { font-size: 2rem; }
+            .navbar .logo { font-size: 1.3rem; }
             .navbar ul { gap: 6px; }
             .navbar li { font-size: 1.05rem; padding: 0 2px 2px 2px; }
         }
@@ -286,6 +285,7 @@
 <body>
     <nav class="navbar">
         <div class="logo">ElFanan-Supplements </div>
+        <hr><hr><br>
         <ul>
             <li data-section="offers">Offers</li>
             <li data-section="accessories">Accessories</li>
@@ -319,9 +319,27 @@
             <div class="error" id="adminLoginError"></div>
         </div>
     </div>
+    <!-- Firebase App (core) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <!-- Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
     <script>
-        // بيانات المنتجات (تخزين محلي)
-        let products = JSON.parse(localStorage.getItem('gymProducts') || '[]');
+        // Firebase config
+        const firebaseConfig = {
+          apiKey: "AIzaSyBQk84dO9eB39kQ5eQXqO7MbrBKHP1uWyQ",
+          authDomain: "elfanan-supplements.firebaseapp.com",
+          projectId: "elfanan-supplements",
+          storageBucket: "elfanan-supplements.appspot.com",
+          messagingSenderId: "373631110527",
+          appId: "1:373631110527:web:321bf56dead7f4c3df5e4a",
+          measurementId: "G-R3G7ZLEWEK"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
+    <script>
+        // بيانات المنتجات (Firestore)
+        let products = [];
         let editingProductIndex = null;
         const productTypes = [
             {key: 'creatine', label: 'Creatine'},
@@ -331,6 +349,53 @@
             {key: 'accessories', label: 'Accessories'},
             {key: 'offers', label: 'Offers'}
         ];
+
+        // جلب المنتجات بشكل حي من Firestore
+        db.collection("products").onSnapshot((snapshot) => {
+            products = [];
+            snapshot.forEach(doc => {
+                let prod = doc.data();
+                prod.id = doc.id;
+                products.push(prod);
+            });
+            // إعادة عرض القسم الحالي أو لوحة الأدمن
+            const active = document.querySelector('.navbar li.active');
+            if (active && active.getAttribute('data-section') === 'admin') {
+                renderAdminPanel();
+            } else {
+                renderProductsSection(active ? active.getAttribute('data-section') : 'creatine');
+            }
+        });
+
+        // تحديث منتج أو إضافة منتج جديد
+        function saveProductData(prod) {
+            if (editingProductIndex !== null && products[editingProductIndex].id) {
+                db.collection("products").doc(products[editingProductIndex].id).set(prod);
+                editingProductIndex = null;
+            } else {
+                db.collection("products").add(prod);
+            }
+            hideProductForm();
+        }
+
+        // حذف منتج
+        window.deleteProduct = function(i) {
+            if(confirm('هل أنت متأكد من حذف المنتج؟')) {
+                db.collection("products").doc(products[i].id).delete();
+            }
+        }
+
+        // إخفاء/إظهار منتج
+        window.toggleHideProduct = function(i) {
+            db.collection("products").doc(products[i].id).update({
+                hidden: !products[i].hidden
+            });
+        }
+
+        // تعديل منتج
+        window.editProduct = function(i) {
+            showProductForm(i);
+        }
         // --- سلايدر الصور وتكبيرها ---
         function showImageModal(src) {
             let modal = document.createElement('div');
@@ -554,17 +619,6 @@
         }
         function hideProductForm() {
             document.getElementById('productFormContainer').innerHTML = '';
-        }
-        function saveProductData(prod) {
-            if(editingProductIndex !== null) {
-                products[editingProductIndex] = prod;
-                editingProductIndex = null;
-            } else {
-                products.push(prod);
-            }
-            saveProducts();
-            hideProductForm();
-            renderAdminProductsList();
         }
         // عرض المنتجات في لوحة الأدمن
         function renderAdminProductsList() {
