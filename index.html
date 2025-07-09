@@ -65,9 +65,22 @@
             background: #ffb300;
             width: 32px;
         }
+        #searchBarContainer {
+            margin-bottom: 0 !important;
+        }
+        #searchInput::placeholder {
+            color: #bbb;
+            opacity: 1;
+        }
+        #searchInput {
+            background: #232323;
+            color: #fff;
+            border: none;
+            box-shadow: 0 2px 8px #0003;
+        }
         .container {
             max-width: 1100px;
-            margin: 40px auto 0 auto;
+            margin: 16px auto 0 auto;
             padding: 20px;
             background: #232323;
             border-radius: 12px;
@@ -301,9 +314,9 @@
             </li>
         </ul>
     </nav>
-    <div id="searchBarContainer" style="display:flex;justify-content:center;margin:18px 0 0 0;">
-        <input id="searchInput" type="text" placeholder="ابحث عن منتج أو وصف..." 
-            style="width:60%;max-width:400px;padding:10px 16px;font-size:1.2rem;border-radius:8px;border:none;outline:none;box-shadow:0 2px 8px #0003;">
+    <div id="searchBarContainer" style="display:flex;justify-content:center;margin:8px 0 0 0;">
+        <input id="searchInput" type="text" placeholder="Search for product or description..." 
+            style="width:60%;max-width:400px;padding:10px 16px;font-size:1.2rem;border-radius:8px;border:none;outline:none;box-shadow:0 2px 8px #0003;background:#232323;color:#fff;"/>
     </div>
     <button id="scrollTopBtn" style="display:none;position:fixed;bottom:32px;right:32px;z-index:9999;background:#ffb300;border:none;border-radius:50%;width:54px;height:54px;box-shadow:0 2px 12px #0007;cursor:pointer;align-items:center;justify-content:center;transition:opacity 0.3s;">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
