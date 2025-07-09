@@ -7,8 +7,9 @@
     <link rel="icon" href="alfannan.png" type="image/svg+xml">
     <!-- Firebase App (the core Firebase SDK) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <!-- Firebase Realtime Database -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <!-- Optional: Analytics -->
+    <!-- Firebase Analytics (اختياري) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;700&display=swap');
@@ -357,7 +358,7 @@
         if (firebase.analytics) firebase.analytics();
         const db = firebase.database();
 
-        // --- المنتجات ---
+        // --- المنتجات من Firebase ---
         let products = [];
         let editingProductIndex = null;
         const productTypes = [
@@ -369,59 +370,110 @@
             {key: 'offers', label: 'Offers'}
         ];
 
-        // --- جلب المنتجات من Firebase ---
-        function fetchProducts(callback) {
-            db.ref('gymProducts').on('value', snap => {
-                products = snap.val() ? Object.values(snap.val()) : [];
-                if (typeof callback === 'function') callback();
+        // جلب المنتجات من قاعدة البيانات وتحديثها تلقائياً
+        function listenToProducts() {
+            db.ref('gymProducts').on('value', snapshot => {
+                const val = snapshot.val() || [];
+                // إذا كانت البيانات ككائن (مفتاح تلقائي)، حولها لمصفوفة
+                if (!Array.isArray(val)) {
+                    products = Object.values(val);
+                } else {
+                    products = val;
+                }
+                // إعادة عرض القسم الحالي
+                const activeSection = document.querySelector('.navbar li.active')?.getAttribute('data-section') || 'creatine';
+                renderProductsSection(activeSection);
+                // إذا كنا في لوحة الأدمن، حدث القائمة
+                if (document.getElementById('adminProductsList')) renderAdminProductsList();
             });
         }
-        // --- حفظ المنتجات (إرسال كل المنتجات) ---
-        function saveProducts() {
-            // حفظ كل المنتجات دفعة واحدة
-            const obj = {};
-            products.forEach((p, i) => obj[i] = p);
-            db.ref('gymProducts').set(obj);
-        }
-        // --- إضافة منتج ---
-        function addProduct(prod) {
-            products.push(prod);
-            saveProducts();
-        }
-        // --- تعديل منتج ---
-        function updateProduct(index, prod) {
-            products[index] = prod;
-            saveProducts();
-        }
-        // --- حذف منتج ---
-        function deleteProduct(index) {
-            products.splice(index, 1);
-            saveProducts();
-        }
-        // --- إخفاء/إظهار منتج ---
-        function toggleHideProduct(index) {
-            products[index].hidden = !products[index].hidden;
-            saveProducts();
+        listenToProducts();
+
+        // حفظ المنتجات في قاعدة البيانات
+        function saveProductsToDB() {
+            db.ref('gymProducts').set(products);
         }
 
-        // --- تحديث واجهة المستخدم عند جلب المنتجات ---
-        fetchProducts(() => {
-            // عرض قسم الكرياتين افتراضيا بعد جلب البيانات
-            renderProductsSection('creatine');
-        });
-
-        // --- عدل كل استدعاءات المنتجات لتستخدم الدوال الجديدة ---
-        // في دوال إضافة/تعديل/حذف/إخفاء/إظهار المنتج، استبدل المنتجات القديمة بالدوال أعلاه
-        // مثال: عند إضافة منتج جديد:
-        // addProduct(newProd);
-        // عند التعديل:
-        // updateProduct(editingProductIndex, newProd);
-        // عند الحذف:
-        // deleteProduct(i);
-        // عند الإخفاء/الإظهار:
-        // toggleHideProduct(i);
-
-        // باقي الكود يبقى كما هو مع استبدال عمليات localStorage بالدوال أعلاه
+        // --- سلايدر الصور وتكبيرها ---
+        function showImageModal(src) {
+            let modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = 0;
+            modal.style.left = 0;
+            modal.style.right = 0;
+            modal.style.bottom = 0;
+            modal.style.background = 'rgba(0,0,0,0.85)';
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.zIndex = 2000;
+            modal.innerHTML = `<img src='${src}' style='max-width:90vw;max-height:90vh;border-radius:12px;border:4px solid #ffb300;'>`;
+            modal.onclick = () => document.body.removeChild(modal);
+            document.body.appendChild(modal);
+        }
+        // --- حساب نسبة الخصم ---
+        function getDiscountPercent(before, after) {
+            before = parseFloat(before); after = parseFloat(after);
+            if(!before || !after || after >= before) return '';
+            return Math.round(100 * (before - after) / before);
+        }
+        // تحديث التخزين المحلي
+        // لم يعد هناك حاجة لـ localStorage، سنستخدم saveProductsToDB بدلاً منها
+        // عرض المنتجات حسب النوع
+        function renderProductsSection(typeKey) {
+            const container = document.getElementById('mainContainer');
+            const type = productTypes.find(t => t.key === typeKey);
+            // المنتجات غير المخفية فقط + البحث
+            const searchTerm = (window.currentSearchTerm || '').toLowerCase();
+            const filtered = products.filter(p => 
+                p.type === typeKey && 
+                !p.hidden &&
+                (
+                    !searchTerm ||
+                    (p.name && p.name.toLowerCase().includes(searchTerm)) ||
+                    (p.desc && p.desc.toLowerCase().includes(searchTerm))
+                )
+            );
+            let html = `<div class='section-title'>${type ? type.label : ''}</div>`;
+            if(filtered.length === 0) {
+                html += `<div style='text-align:center;'>No products in this section yet.</div>`;
+            } else {
+                html += `<div class='products-grid'>`;
+                filtered.forEach((prod, idx) => {
+                    // سلايدر صور
+                    let slider = '';
+                    if(prod.images && prod.images.length > 1) {
+                        slider = `
+                        <div class='img-slider' style='position:relative;'>
+                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")'>
+                            <button class='slider-btn left' onclick='event.stopPropagation();changeSlide(this,${idx},-1)' style='position:absolute;left:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#ffb300;font-size:1.2rem;cursor:pointer;border-radius:4px;'>‹</button>
+                            <button class='slider-btn right' onclick='event.stopPropagation();changeSlide(this,${idx},1)' style='position:absolute;right:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#ffb300;font-size:1.2rem;cursor:pointer;border-radius:4px;'>›</button>
+                        </div>`;
+                    } else {
+                        slider = `<img src='${prod.images[0] || ''}' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")'>`;
+                    }
+                    // نسبة الخصم
+                    let discount = getDiscountPercent(prod.priceBefore, prod.priceAfter);
+                    let discountHtml = discount ? `<span style='background:#ff4444;color:#fff;padding:2px 8px;border-radius:6px;font-size:1rem;position:absolute;left:10px;top:10px;'>${discount}% OFF</span>` : '';
+                    html += `
+                    <div class='product-card' style='overflow:visible;'>
+                        <div style='position:relative;'>
+                            ${slider}
+                            ${discountHtml}
+                        </div>
+                        <div class='product-title'>${prod.name}</div>
+                        <div class='product-desc'>${prod.desc}</div>
+                        <div class='product-type'>${type.label}</div>
+                        <div class='product-prices'>
+                            <del>${prod.priceBefore} ج.م</del> <span>${prod.priceAfter} ج.م</span>
+                        </div>
+                    </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+            container.innerHTML = html;
+        }
         // --- سلايدر الصور ---
         window.changeSlide = function(btn, prodIdx, dir) {
             const section = document.querySelector('.navbar li.active').getAttribute('data-section');
@@ -575,11 +627,12 @@
         }
         function saveProductData(prod) {
             if(editingProductIndex !== null) {
-                updateProduct(editingProductIndex, prod);
+                products[editingProductIndex] = prod;
                 editingProductIndex = null;
             } else {
-                addProduct(prod);
+                products.push(prod);
             }
+            saveProductsToDB();
             hideProductForm();
             renderAdminProductsList();
         }
@@ -620,6 +673,24 @@
                 </div>`;
             });
             list.innerHTML = html;
+        }
+        // زر إخفاء/إظهار المنتج
+        window.toggleHideProduct = function(i) {
+            products[i].hidden = !products[i].hidden;
+            saveProductsToDB();
+            renderAdminProductsList();
+        }
+        // تعديل منتج
+        window.editProduct = function(i) {
+            showProductForm(i);
+        }
+        // حذف منتج
+        window.deleteProduct = function(i) {
+            if(confirm('هل أنت متأكد من حذف المنتج؟')) {
+                products.splice(i,1);
+                saveProductsToDB();
+                renderAdminProductsList();
+            }
         }
         // ربط أقسام الناب بار
         document.querySelectorAll('.navbar li[data-section]').forEach(li => {
