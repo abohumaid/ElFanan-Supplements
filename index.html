@@ -304,6 +304,758 @@
 </head>
 <body>
     <nav class="navbar">
+        <div class="logo">
+            ElFanan-Supplements
+        </div>
+        <ul>
+            <li data-section="creatine" class="active">Creatine</li>
+            <li data-section="protein">Protein</li>
+            <li data-section="gainer">Gainer</li>
+            <li data-section="citrulline">Citrulline</li>
+            <li data-section="accessories">Accessories</li>
+            <li data-section="offers">Offers</li>
+            <li data-section="admin" id="adminBtn" title="لوحة الأدمن">
+                <img src="icon1.png" alt="Admin Icon" style="width:32px;height:32px;vertical-align:middle;border-radius:50%;background:transparent; padding-top: 5px; width: 50px; height: 50px;" />
+            </li>
+        </ul>
+    </nav>
+    <div id="searchBarContainer" style="display:flex;justify-content:center;margin:8px 0 0 0;">
+        <input id="searchInput" type="text" placeholder=" Search for product...        🔍" 
+            style="width:60%;max-width:400px;padding:10px 16px;font-size:1.2rem;border-radius:8px;border:none;outline:none;box-shadow:0 2px 8px #0003;background:#232323;color:#fff;"/>
+    </div>
+    <button id="scrollTopBtn" style="display:none;position:fixed;bottom:32px;right:16px;z-index:9999;background:#ffb300;border:none;border-radius:50%;width:54px;height:54px;box-shadow:0 2px 12px #0007;cursor:pointer;align-items:center;justify-content:center;transition:opacity 0.3s;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="12" fill="#ffb300"/>
+            <path d="M8 14l4-4 4 4" stroke="#222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </button>
+    <button id="whatsappBtn" style="display:flex;position:fixed;bottom:100px;right:16px;z-index:9999;background:#25d366;border:none;border-radius:50%;width:54px;height:54px;box-shadow:0 2px 12px #0007;cursor:pointer;align-items:center;justify-content:center;transition:opacity 0.3s;">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="16" fill="#25d366"/>
+            <path d="M23 16.5c0-4.142-3.358-7.5-7.5-7.5s-7.5 3.358-7.5 7.5c0 1.326.347 2.57.95 3.646L8 24l3.972-1.312A7.47 7.47 0 0 0 15.5 24c4.142 0 7.5-3.358 7.5-7.5zm-7.5 6.5c-1.13 0-2.19-.293-3.104-.805l-.221-.13-2.36.78.78-2.36-.13-.221A6.48 6.48 0 0 1 9 16.5c0-3.584 2.916-6.5 6.5-6.5s6.5 2.916 6.5 6.5-2.916 6.5-6.5 6.5zm3.35-4.05c-.184-.092-1.09-.537-1.257-.598-.168-.062-.29-.092-.413.092-.123.184-.474.598-.581.723-.107.123-.215.138-.399.046-.184-.092-.777-.286-1.48-.911-.545-.486-.913-1.086-1.02-1.27-.107-.184-.012-.283.08-.375.082-.081.184-.215.276-.323.092-.107.123-.184.184-.307.062-.123.031-.23-.016-.323-.046-.092-.414-1.07-.567-1.465-.153-.395-.299-.34-.413-.347-.107-.005-.23-.006-.353-.006-.123 0-.323.046-.492.23-.168.184-.638.573-.638 1.398 0 .825.573 1.623.653 1.739.08.115 1.127 1.72 2.73 2.347.382.132.68.211.914.27.384.092.734.079 1.011.048.308-.034.949-.388 1.084-.763.134-.375.134-.696.094-.763-.04-.067-.153-.107-.32-.184z" fill="#fff"/>
+        </svg>
+    </button>
+    <div class="container" id="mainContainer">
+        <!-- المحتوى يتغير هنا -->
+    </div>
+    <div id="adminLoginModal" class="admin-login-modal" style="display:none;">
+        <div class="admin-login-box">
+            <h2>Admin Login</h2>
+            <input type="text" id="adminUsername" placeholder="Username">
+            <input type="password" id="adminPassword" placeholder="Password">
+            <button id="adminLoginBtn">Login</button>
+            <div class="error" id="adminLoginError"></div>
+        </div>
+    </div>
+    <script>
+        // --- Firebase config ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBQk84dO9eB39kQ5eQXqO7MbrBKHP1uWyQ",
+            authDomain: "elfanan-supplements.firebaseapp.com",
+            databaseURL: "https://elfanan-supplements-default-rtdb.firebaseio.com",
+            projectId: "elfanan-supplements",
+            storageBucket: "elfanan-supplements.firebasestorage.app",
+            messagingSenderId: "373631110527",
+            appId: "1:373631110527:web:321bf56dead7f4c3df5e4a",
+            measurementId: "G-R3G7ZLEWEK"
+        };
+        firebase.initializeApp(firebaseConfig);
+        if (firebase.analytics) firebase.analytics();
+        const db = firebase.database();
+
+        // --- المنتجات من Firebase ---
+        let products = [];
+        let editingProductIndex = null;
+        const productTypes = [
+            {key: 'creatine', label: 'Creatine'},
+            {key: 'protein', label: 'Protein'},
+            {key: 'gainer', label: 'Gainer'},
+            {key: 'citrulline', label: 'Citrulline'},
+            {key: 'accessories', label: 'Accessories'},
+            {key: 'offers', label: 'Offers'}
+        ];
+
+        // جلب المنتجات من قاعدة البيانات وتحديثها تلقائياً
+        function listenToProducts() {
+            db.ref('gymProducts').on('value', snapshot => {
+                const val = snapshot.val() || [];
+                // إذا كانت البيانات ككائن (مفتاح تلقائي)، حولها لمصفوفة
+                if (!Array.isArray(val)) {
+                    products = Object.values(val);
+                } else {
+                    products = val;
+                }
+                // إعادة عرض القسم الحالي
+                const activeSection = document.querySelector('.navbar li.active')?.getAttribute('data-section') || 'creatine';
+                renderProductsSection(activeSection);
+                // إذا كنا في لوحة الأدمن، حدث القائمة
+                if (document.getElementById('adminProductsList')) renderAdminProductsList();
+            });
+        }
+        listenToProducts();
+
+        // حفظ المنتجات في قاعدة البيانات
+        function saveProductsToDB() {
+            db.ref('gymProducts').set(products);
+        }
+
+        // --- سلايدر الصور وتكبيرها ---
+        function showImageModal(src) {
+            let modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = 0;
+            modal.style.left = 0;
+            modal.style.right = 0;
+            modal.style.bottom = 0;
+            modal.style.background = 'rgba(0,0,0,0.85)';
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.zIndex = 2000;
+            modal.innerHTML = `<img src='${src}' style='max-width:90vw;max-height:90vh;border-radius:12px;border:4px solid #ffb300;'>`;
+            modal.onclick = () => document.body.removeChild(modal);
+            document.body.appendChild(modal);
+        }
+        // --- حساب نسبة الخصم ---
+        function getDiscountPercent(before, after) {
+            before = parseFloat(before); after = parseFloat(after);
+            if(!before || !after || after >= before) return '';
+            return Math.round(100 * (before - after) / before);
+        }
+        // تحديث التخزين المحلي
+        // لم يعد هناك حاجة لـ localStorage، سنستخدم saveProductsToDB بدلاً منها
+        // عرض المنتجات حسب النوع
+        function renderProductsSection(typeKey) {
+            const container = document.getElementById('mainContainer');
+            const type = productTypes.find(t => t.key === typeKey);
+            // المنتجات غير المخفية فقط + البحث
+            const searchTerm = (window.currentSearchTerm || '').toLowerCase();
+            const filtered = products.filter(p => 
+                p.type === typeKey && 
+                !p.hidden &&
+                (
+                    !searchTerm ||
+                    (p.name && p.name.toLowerCase().includes(searchTerm)) ||
+                    (p.desc && p.desc.toLowerCase().includes(searchTerm))
+                )
+            );
+            let html = `<div class='section-title'>${type ? type.label : ''}</div>`;
+            if(filtered.length === 0) {
+                html += `<div style='text-align:center;'>No products in this section yet.</div>`;
+            } else {
+                html += `<div class='products-grid'>`;
+                filtered.forEach((prod, idx) => {
+                    // سلايدر صور
+                    let slider = '';
+                    if(prod.images && prod.images.length > 1) {
+                        slider = `
+                        <div class='img-slider' style='position:relative;'>
+                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")'>
+                            <button class='slider-btn left' onclick='event.stopPropagation();changeSlide(this,${idx},-1)' style='position:absolute;left:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#ffb300;font-size:1.2rem;cursor:pointer;border-radius:4px;'>‹</button>
+                            <button class='slider-btn right' onclick='event.stopPropagation();changeSlide(this,${idx},1)' style='position:absolute;right:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#ffb300;font-size:1.2rem;cursor:pointer;border-radius:4px;'>›</button>
+                        </div>`;
+                    } else {
+                        slider = `<img src='${prod.images[0] || ''}' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")'>`;
+                    }
+                    // نسبة الخصم
+                    let discount = getDiscountPercent(prod.priceBefore, prod.priceAfter);
+                    let discountHtml = discount ? `<span style='background:#ff4444;color:#fff;padding:2px 8px;border-radius:6px;font-size:1rem;position:absolute;left:10px;top:10px;'>${discount}% OFF</span>` : '';
+                    html += `
+                    <div class='product-card' style='overflow:visible;'>
+                        <div style='position:relative;'>
+                            ${slider}
+                            ${discountHtml}
+                        </div>
+                        <div class='product-title'>${prod.name}</div>
+                        <div class='product-desc'>${prod.desc}</div>
+                        <div class='product-type'>${type.label}</div>
+                        <div class='product-prices'>
+                            <del>${prod.priceBefore} ج.م</del> <span>${prod.priceAfter} ج.م</span>
+                        </div>
+                    </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+            container.innerHTML = html;
+        }
+        // --- سلايدر الصور ---
+        window.changeSlide = function(btn, prodIdx, dir) {
+            const section = document.querySelector('.navbar li.active').getAttribute('data-section');
+            const filtered = products.filter(p => p.type === section && !p.hidden);
+            const prod = filtered[prodIdx];
+            let img = btn.parentElement.querySelector('.slider-img');
+            let current = prod._sliderIndex || 0;
+            current = (current + dir + prod.images.length) % prod.images.length;
+            prod._sliderIndex = current;
+            img.src = prod.images[current];
+            img.setAttribute('onclick', `showImageModal("${prod.images[current]}")`);
+        }
+        window.showImageModal = showImageModal;
+        // نافذة تسجيل دخول الأدمن
+        function showAdminLogin() {
+            document.getElementById('adminLoginModal').style.display = 'flex';
+            document.getElementById('adminUsername').value = '';
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('adminLoginError').innerText = '';
+            document.querySelector('.admin-login-box h2').innerText = 'Admin Login';
+            document.getElementById('adminUsername').placeholder = 'Username';
+            document.getElementById('adminPassword').placeholder = 'Password';
+            document.getElementById('adminLoginBtn').innerText = 'Login';
+        }
+        function hideAdminLogin() {
+            document.getElementById('adminLoginModal').style.display = 'none';
+        }
+        document.getElementById('adminBtn').onclick = showAdminLogin;
+        document.getElementById('adminLoginBtn').onclick = function() {
+            const user = document.getElementById('adminUsername').value.trim();
+            const pass = document.getElementById('adminPassword').value.trim();
+            if(user === 'ahmed' && pass === '0000') {
+                hideAdminLogin();
+                renderAdminPanel();
+            } else {
+                document.getElementById('adminLoginError').innerText = 'Invalid login data';
+            }
+        };
+        // اغلاق النافذة عند الضغط خارجها
+        document.getElementById('adminLoginModal').onclick = function(e) {
+            if(e.target === this) hideAdminLogin();
+        };
+
+        // لوحة الأدمن
+        function renderAdminPanel() {
+            const container = document.getElementById('mainContainer');
+            let html = `<div class='admin-panel'>
+                <h2>Admin Panel</h2>
+                <button class='add-product-btn' onclick='showProductForm()'>+ Add New Product</button>
+                <div id='productFormContainer'></div>
+                <div class='products-list' id='adminProductsList'></div>
+            </div>`;
+            container.innerHTML = html;
+            renderAdminProductsList();
+        }
+
+        // نموذج إضافة/تعديل منتج
+        function showProductForm(editIndex = null) {
+            editingProductIndex = editIndex;
+            let prod = {name:'', desc:'', images:[], priceBefore:'', priceAfter:'', type:productTypes[0].key};
+            if(editIndex !== null) prod = products[editIndex];
+            let html = `<form class='product-form' id='productForm'>
+                <label>Product Name</label>
+                <input type='text' name='name' value='${prod.name || ''}' required>
+                <label>Description</label>
+                <textarea name='desc' rows='2' required>${prod.desc || ''}</textarea>
+                <label>Product Images</label>
+                <input type='file' name='images' accept='image/*' multiple ${editIndex!==null?'':'required'}>
+                <div id='previewImages' style='display:flex;gap:8px;margin-bottom:8px;'></div>
+                <label>Price Before Discount</label>
+                <input type='number' name='priceBefore' value='${prod.priceBefore || ''}' required>
+                <label>Price After Discount</label>
+                <input type='number' name='priceAfter' value='${prod.priceAfter || ''}' required>
+                <label>Product Type</label>
+                <select name='type'>
+                    ${productTypes.map(t=>`<option value='${t.key}' ${prod.type===t.key?'selected':''}>${t.label}</option>`).join('')}
+                </select>
+                <button type='submit'>${editIndex!==null?'Edit Product':'Add Product'}</button>
+                <button type='button' onclick='hideProductForm()' style='margin-right:10px;background:#333;color:#fff;'>Cancel</button>
+            </form>`;
+            document.getElementById('productFormContainer').innerHTML = html;
+            // عرض الصور الحالية عند التعديل
+            if(editIndex!==null && prod.images && prod.images.length) {
+                showPreviewImages(prod.images);
+            }
+            // معاينة الصور الجديدة
+            document.querySelector('#productForm input[name="images"]').onchange = function(e) {
+                const files = Array.from(e.target.files);
+                if(files.length) {
+                    const readers = files.map(file => {
+                        return new Promise(res => {
+                            const reader = new FileReader();
+                            reader.onload = ev => res(ev.target.result);
+                            reader.readAsDataURL(file);
+                        });
+                    });
+                    Promise.all(readers).then(imgs => {
+                        showPreviewImages(imgs);
+                    });
+                }
+            };
+            // معالجة الإرسال
+            document.getElementById('productForm').onsubmit = function(e) {
+                e.preventDefault();
+                const fd = new FormData(this);
+                let newProd = {
+                    name: fd.get('name'),
+                    desc: fd.get('desc'),
+                    images: [],
+                    priceBefore: fd.get('priceBefore'),
+                    priceAfter: fd.get('priceAfter'),
+                    type: fd.get('type')
+                };
+                // صور
+                const files = this.images.files;
+                if(files.length) {
+                    const readers = Array.from(files).map(file => {
+                        return new Promise(res => {
+                            const reader = new FileReader();
+                            reader.onload = ev => res(ev.target.result);
+                            reader.readAsDataURL(file);
+                        });
+                    });
+                    Promise.all(readers).then(imgs => {
+                        newProd.images = imgs;
+                        saveProductData(newProd);
+                    });
+                } else if(editIndex!==null) {
+                    // عند التعديل بدون تغيير الصور
+                    newProd.images = prod.images;
+                    saveProductData(newProd);
+                }
+            };
+        }
+        function showPreviewImages(imgs) {
+            const preview = document.getElementById('previewImages');
+            preview.innerHTML = '';
+            imgs.forEach(src => {
+                const img = document.createElement('img');
+                img.src = src;
+                img.style.width = '50px';
+                img.style.height = '50px';
+                img.style.objectFit = 'cover';
+                img.style.borderRadius = '5px';
+                img.style.border = '1px solid #ffb300';
+                preview.appendChild(img);
+            });
+        }
+        function hideProductForm() {
+            document.getElementById('productFormContainer').innerHTML = '';
+        }
+        function saveProductData(prod) {
+            if(editingProductIndex !== null) {
+                products[editingProductIndex] = prod;
+                editingProductIndex = null;
+            } else {
+                products.push(prod);
+            }
+            saveProductsToDB();
+            hideProductForm();
+            renderAdminProductsList();
+        }
+        // عرض المنتجات في لوحة الأدمن
+        function renderAdminProductsList() {
+            const list = document.getElementById('adminProductsList');
+            if(!products.length) {
+                list.innerHTML = '<div style="text-align:center;">No products yet.</div>';
+                return;
+            }
+            let html = '';
+            products.forEach((prod, i) => {
+                const type = productTypes.find(t=>t.key===prod.type);
+                let hideBtn = prod.hidden 
+                    ? `<button title='إظهار المنتج' onclick='toggleHideProduct(${i})'>
+                        <svg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M1 12C2.73 7.61 7.09 4.5 12 4.5C16.91 4.5 21.27 7.61 23 12C21.27 16.39 16.91 19.5 12 19.5C7.09 19.5 2.73 16.39 1 12Z' stroke='#ffb300' stroke-width='2'/><circle cx='12' cy='12' r='3.5' stroke='#ffb300' stroke-width='2'/></svg>
+                    </button>`
+                    : `<button title='إخفاء المنتج' onclick='toggleHideProduct(${i})'>
+                        <svg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M17.94 17.94C16.13 19.24 14.13 20 12 20C7.09 20 2.73 16.39 1 12C1.73 10.19 2.91 8.61 4.44 7.36M9.9 5.08C10.59 4.86 11.29 4.73 12 4.73C16.91 4.73 21.27 8.34 23 13C22.27 14.81 21.09 16.39 19.56 17.64M1 1L23 23' stroke='#ffb300' stroke-width='2'/><circle cx='12' cy='12' r='3.5' stroke='#ffb300' stroke-width='2'/></svg>
+                    </button>`;
+                html += `<div class='product-card'>
+                    <img src="${prod.images[0] || ''}" alt="صورة المنتج" style="cursor:pointer;" onclick="showImageModal('${prod.images[0]}')">
+                    <div class='product-info'>
+                        <div class='product-title'>${prod.name}</div>
+                        <div class='product-desc'>${prod.desc}</div>
+                        <div class='product-type'>${type ? type.label : ''}</div>
+                        <div class='product-prices'><del>${prod.priceBefore} ج.م</del> <span>${prod.priceAfter} ج.م</span></div>
+                        <div class='product-actions'>
+                            <button title='تعديل المنتج' onclick='editProduct(${i})'>
+                                <svg width='22' height='22' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M4 21H20' stroke='#ffb300' stroke-width='2'/><path d='M18.5 2.5C18.8978 2.10218 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10218 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10218 21.5 5.5L7 20L2 21L3 16L18.5 2.5Z' stroke='#ffb300' stroke-width='2'/></svg>
+                            </button>
+                            <button title='حذف المنتج' onclick='deleteProduct(${i})'>
+                                <svg width='22' height='22' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M3 6H5H21' stroke='#ffb300' stroke-width='2'/><path d='M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M10 11V17M14 11V17' stroke='#ffb300' stroke-width='2'/></svg>
+                            </button>
+                            ${hideBtn}
+                        </div>
+                    </div>
+                </div>`;
+            });
+            list.innerHTML = html;
+        }
+        // زر إخفاء/إظهار المنتج
+        window.toggleHideProduct = function(i) {
+            products[i].hidden = !products[i].hidden;
+            saveProductsToDB();
+            renderAdminProductsList();
+        }
+        // تعديل منتج
+        window.editProduct = function(i) {
+            showProductForm(i);
+        }
+        // حذف منتج
+        window.deleteProduct = function(i) {
+            if(confirm('هل أنت متأكد من حذف المنتج؟')) {
+                products.splice(i,1);
+                saveProductsToDB();
+                renderAdminProductsList();
+            }
+        }
+        // ربط أقسام الناب بار
+        document.querySelectorAll('.navbar li[data-section]').forEach(li => {
+            li.onclick = function() {
+                document.querySelectorAll('.navbar li').forEach(l=>l.classList.remove('active'));
+                this.classList.add('active');
+                // امسح البحث عند تغيير القسم
+                document.getElementById('searchInput').value = '';
+                window.currentSearchTerm = '';
+                const section = this.getAttribute('data-section');
+                if(section === 'admin') {
+                    showAdminLogin();
+                } else {
+                    renderProductsSection(section);
+                }
+            }
+        });
+        // عرض قسم الكرياتين افتراضيا
+        renderProductsSection('creatine');
+        // زر العودة للأعلى
+        const scrollTopBtn = document.getElementById('scrollTopBtn');
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if(window.scrollY > navbar.offsetHeight + 30) {
+                scrollTopBtn.style.display = 'flex';
+                scrollTopBtn.style.opacity = '1';
+            } else {
+                scrollTopBtn.style.opacity = '0';
+                setTimeout(()=>{scrollTopBtn.style.display = 'none';}, 300);
+            }
+        });
+        scrollTopBtn.onclick = function() {
+            window.scrollTo({top:0, behavior:'smooth'});
+        }
+        // البحث المباشر
+        window.currentSearchTerm = '';
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                window.currentSearchTerm = this.value;
+                // ابحث عن القسم الحالي
+                const activeSection = document.querySelector('.navbar li.active')?.getAttribute('data-section') || 'creatine';
+                renderProductsSection(activeSection);
+            });
+        }
+        // زر واتساب العائم
+        const whatsappBtn = document.getElementById('whatsappBtn');
+        if (whatsappBtn) {
+            whatsappBtn.onclick = function() {
+                window.open('https://wa.me/201159768514', '_blank');
+            };
+        }
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElFanan-Supplements</title>
+    <link rel="icon" href="alfannan.png" type="image/svg+xml">
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <!-- Firebase Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- Firebase Analytics (اختياري) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;700&display=swap');
+        body {
+            margin: 0;
+            font-family: 'Teko', Arial, sans-serif;
+            background: #181818;
+            color: #fff;
+            min-height: 100vh;
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #222;
+            padding: 0px;
+            height: 54px;
+            box-shadow: 0 2px 8px #0006;
+        }
+        .navbar .logo {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #ffb300;
+            display: flex;
+            align-items: center;
+            padding: 10px;
+        }
+        .navbar ul {
+            display: flex;
+            gap: 16px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .navbar li {
+            cursor: pointer;
+            font-size: 1.6rem;
+            transition: color 0.2s;
+            position: relative;
+            padding: 0 6px 2px 6px;
+        }
+        .navbar li:hover, .navbar li.active {
+            color: #ffb300;
+        }
+        .navbar li::after {
+            content: '';
+            display: block;
+            margin: 0 auto;
+            margin-top: 4px;
+            width: 28px;
+            height: 4px;
+            border-radius: 2px;
+            background: transparent;
+            transition: background 0.2s, width 0.2s;
+        }
+        .navbar li.active::after,
+        .navbar li:hover::after {
+            background: #ffb300;
+            width: 32px;
+        }
+        #searchBarContainer {
+            margin-bottom: 0 !important;
+        }
+        #searchInput::placeholder {
+            color: #bbb;
+            opacity: 1;
+        }
+        #searchInput {
+            background: #232323;
+            color: #fff;
+            border: none;
+            box-shadow: 0 2px 8px #0003;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 16px auto 0 auto;
+            padding: 20px;
+            background: #232323;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px #0005;
+        }
+        .admin-login-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .admin-login-box {
+            background: #222;
+            padding: 32px 28px;
+            border-radius: 10px;
+            box-shadow: 0 2px 16px #000a;
+            min-width: 320px;
+            text-align: center;
+        }
+        .admin-login-box h2 {
+            margin-bottom: 18px;
+            color: #ffb300;
+            font-size: 2rem;
+        }
+        .admin-login-box input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+        }
+        .admin-login-box button {
+            background: #ffb300;
+            color: #222;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .admin-login-box .error {
+            color: #ff4444;
+            font-size: 1rem;
+            margin-top: 8px;
+        }
+        .admin-panel {
+            text-align: right;
+        }
+        .admin-panel h2 {
+            color: #ffb300;
+            margin-bottom: 18px;
+        }
+        .add-product-btn {
+            background: #ffb300;
+            color: #222;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 18px;
+        }
+        .product-form {
+            background: #232323;
+            border: 1px solid #444;
+            border-radius: 10px;
+            padding: 18px 20px;
+            margin-bottom: 24px;
+        }
+        .product-form label {
+            display: block;
+            margin: 10px 0 4px 0;
+            font-size: 1.1rem;
+        }
+        .product-form input, .product-form textarea, .product-form select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: none;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        .product-form input[type="file"] {
+            background: #fff;
+            color: #222;
+        }
+        .product-form button {
+            background: #ffb300;
+            color: #222;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .products-list {
+            margin-top: 30px;
+        }
+        .product-card {
+            background: #1a1a1a;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px #0005;
+            padding: 18px 20px;
+            margin-bottom: 18px;
+            display: flex;
+            gap: 18px;
+            align-items: flex-start;
+            position: relative;
+        }
+        .product-card img {
+            width: 220px;
+            height: 220px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #ffb300;
+            background: #fff;
+        }
+        .product-info {
+            flex: 1;
+        }
+        .product-title {
+            font-size: 1.5rem;
+            color: #ffb300;
+            margin-bottom: 6px;
+        }
+        .product-desc {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+        .product-type {
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 6px;
+        }
+        .product-prices {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 12px;
+        }
+        .product-prices del {
+            color: #ff4444;
+            margin-right: 8px;
+            margin-left: 0;
+        }
+        .product-actions {
+            display: flex;
+            flex-direction: row;
+            gap: 16px;
+            justify-content: center;
+            align-items: center;
+            margin-top: 18px;
+            position: static;
+        }
+        .product-actions button {
+            background: none;
+            color: #ffb300;
+            border: none;
+            border-radius: 5px;
+            padding: 4px 6px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .product-actions button:hover {
+            color: #222;
+            background: #ffb300;
+        }
+        .section-title {
+            font-size: 2rem;
+            color: #ffb300;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+        }
+        .products-grid .product-card {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+        .products-grid .product-card img, .products-grid .img-slider {
+            width: 220px !important;
+            height: 220px !important;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        @media (max-width: 700px) {
+            .container { padding: 8px; }
+            .navbar { flex-direction: column; height: auto; padding: 0 4px; }
+            .navbar { font-size: 1.3rem; }
+            .logo { font-size: 2rem; }
+            .navbar ul { gap: 6px; }
+            .navbar li { font-size: 1.05rem; padding: 0 2px 2px 2px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
         <div class="logo"><img src="icon1.png" alt="ElFanan Logo" style="height:38px;width:38px;margin-right:10px;vertical-align:middle;">ElFanan-Supplements </div>
         <ul>
             <li data-section="creatine" class="active">Creatine</li>
