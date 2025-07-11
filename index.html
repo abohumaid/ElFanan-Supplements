@@ -285,6 +285,14 @@
             align-items: center;
             text-align: center;
             position: relative;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: productFadeIn 0.35s cubic-bezier(.36,.07,.19,.97) forwards;
+            animation-delay: var(--fade-delay, 0ms);
+        }
+        @keyframes productFadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .products-grid .product-card img, .products-grid .img-slider {
             width: 220px !important;
@@ -469,6 +477,8 @@
             } else {
                 html += `<div class='products-grid'>`;
                 filtered.forEach((prod, idx) => {
+                    // لكل بطاقة، أضف تأخير بسيط لتسلسل الأنيميشن
+                    const fadeDelay = idx * 60; // 60ms لكل بطاقة
                     // سلايدر صور
                     let slider = '';
                     if(prod.images && prod.images.length > 1) {
@@ -485,7 +495,7 @@
                     let discount = getDiscountPercent(prod.priceBefore, prod.priceAfter);
                     let discountHtml = discount ? `<span style='background:#ff4444;color:#fff;padding:2px 8px;border-radius:6px;font-size:1rem;position:absolute;left:10px;top:10px;'>${discount}% OFF</span>` : '';
                     html += `
-                    <div class='product-card' style='overflow:visible;'>
+                    <div class='product-card' style='overflow:visible; --fade-delay:${fadeDelay}ms;'>
                         <div style='position:relative;'>
                             ${slider}
                             ${discountHtml}
