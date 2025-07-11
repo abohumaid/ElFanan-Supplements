@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ElFanan-Supplements</title>
-    <link rel="icon" href="icon4.png" type="image/svg+xml">
+    <link rel="icon" href="alfannan.png" type="image/svg+xml">
     <!-- Firebase App (the core Firebase SDK) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <!-- Firebase Realtime Database -->
@@ -300,9 +300,33 @@
             .navbar ul { gap: 6px; }
             .navbar li { font-size: 1.05rem; padding: 0 2px 2px 2px; }
         }
+        /* Splash Screen Animations */
+        @keyframes shake {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            10% { transform: translate(-20px, 0) rotate(-10deg); }
+            20% { transform: translate(20px, 0) rotate(10deg); }
+            30% { transform: translate(-20px, 0) rotate(-10deg); }
+            40% { transform: translate(20px, 0) rotate(10deg); }
+            50% { transform: translate(-20px, 0) rotate(-10deg); }
+            60% { transform: translate(20px, 0) rotate(10deg); }
+            70% { transform: translate(-20px, 0) rotate(10deg); }
+            80% { transform: translate(-20px, 0) rotate(-10deg); }
+            90% { transform: translate(20px, 0) rotate(10deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        @keyframes dropDown {
+            0% { transform: translateY(0); }
+            80% { transform: translateY(0); }
+            100% { transform: translateY(100vh); }
+        }
     </style>
 </head>
 <body>
+    <!-- Splash Screen -->
+    <div id="splashScreen" style="position:fixed;z-index:20000;top:0;left:0;width:100vw;height:100vh;background:#181818;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity 0.4s;">
+        <img id="splashLogo" src="icon4.png" alt="Logo" style="width:120px;height:120px;" />
+    </div>
+    <!-- نهاية شاشة التحميل -->
     <nav class="navbar">
         <div class="logo">
             ElFanan-Supplements
@@ -745,9 +769,31 @@
         const whatsappBtn = document.getElementById('whatsappBtn');
         if (whatsappBtn) {
             whatsappBtn.onclick = function() {
-                window.open('https://wa.me/201121366757', '_blank');
+                window.open('https://wa.me/201159768514', '_blank');
             };
         }
+    </script>
+    <!-- Splash Screen Animation -->
+    <script>
+        window.addEventListener('DOMContentLoaded', function() {
+            const splash = document.getElementById('splashScreen');
+            const logo = document.getElementById('splashLogo');
+            if (splash && logo) {
+                // Step 1: Shake
+                logo.style.animation = 'shake 0.7s cubic-bezier(.36,.07,.19,.97) both';
+                setTimeout(() => {
+                    // Step 2: Drop Down
+                    logo.style.animation = 'dropDown 0.5s cubic-bezier(.36,.07,.19,.97) forwards';
+                    setTimeout(() => {
+                        // Step 3: Hide splash and show page
+                        splash.style.opacity = '0';
+                        setTimeout(() => {
+                            splash.style.display = 'none';
+                        }, 400);
+                    }, 500);
+                }, 700);
+            }
+        });
     </script>
 </body>
 </html>
