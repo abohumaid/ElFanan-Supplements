@@ -304,7 +304,10 @@
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo">ElFanan-Supplements </div>
+        <div class="logo">
+            <img src="icon1.png" alt="F Icon" class="logo-icon" width="60px" height="60px" style="padding-top: 10px;">
+            ElFanan-Supplements
+        </div>
         <ul>
             <li data-section="creatine" class="active">Creatine</li>
             <li data-section="protein">Protein</li>
@@ -461,20 +464,11 @@
                     // نسبة الخصم
                     let discount = getDiscountPercent(prod.priceBefore, prod.priceAfter);
                     let discountHtml = discount ? `<span style='background:#ff4444;color:#fff;padding:2px 8px;border-radius:6px;font-size:1rem;position:absolute;left:10px;top:10px;'>${discount}% OFF</span>` : '';
-                    // زر واتساب مشاركة جديد
-                    let whatsappShareBtn = `<button class="whatsapp-share-btn" title="مشاركة المنتج على واتساب" onclick="shareProductWhatsapp('${encodeURIComponent(prod.name)}','${encodeURIComponent(prod.images[0]||'')}')" style="position:absolute;top:10px;right:50px;background:#25d366;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M23 12c0-6.075-4.925-11-11-11S1 5.925 1 12c0 1.93.488 3.747 1.34 5.32L1 23l5.68-1.34A10.96 10.96 0 0 0 12 23c6.075 0 11-4.925 11-11z" fill="#25d366"/><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.472-.148-.67.15-.198.297-.767.967-.94 1.164-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.447-.52.149-.173.198-.297.298-.495.099-.198.05-.372-.025-.52-.074-.149-.669-1.613-.916-2.21-.242-.582-.487-.503-.67-.513-.173-.008-.372-.01-.57-.01-.198 0-.52.074-.793.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.877 1.213 3.075.149.198 2.1 3.21 5.077 4.374.71.306 1.263.489 1.694.625.712.227 1.36.195 1.872.118.571-.084 1.758-.719 2.007-1.413.248-.694.248-1.29.173-1.413-.074-.124-.272-.198-.57-.347z" fill="#fff"/></svg>
-                    </button>`;
-                    // زر المشاركة القديم (يمكن حذفه إذا لم يعد مطلوبًا)
-                    let shareBtn = `<button class="share-btn" title="مشاركة المنتج" onclick="shareProduct('${encodeURIComponent(prod.name)}','${encodeURIComponent(prod.priceAfter)}','${encodeURIComponent(prod.images[0]||'')}')" style="position:absolute;top:10px;right:10px;background:#25d366;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" stroke="#fff" stroke-width="2"/><path d="M12 16V4m0 0l-4 4m4-4l4 4" stroke="#fff" stroke-width="2"/></svg>
-                    </button>`;
                     html += `
-                    <div class='product-card' style='overflow:visible;position:relative;'>
+                    <div class='product-card' style='overflow:visible;'>
                         <div style='position:relative;'>
                             ${slider}
                             ${discountHtml}
-                            ${whatsappShareBtn}
                         </div>
                         <div class='product-title'>${prod.name}</div>
                         <div class='product-desc'>${prod.desc}</div>
@@ -757,25 +751,6 @@
             whatsappBtn.onclick = function() {
                 window.open('https://wa.me/201159768514', '_blank');
             };
-        }
-        function shareProduct(name, price, imageUrl) {
-            const phone = '01159768514';
-            let msg = `منتج: ${decodeURIComponent(name)}%0Aالسعر: ${decodeURIComponent(price)} ج.م`;
-            if(imageUrl && imageUrl !== 'undefined') {
-                msg += `%0Aصورة المنتج: ${decodeURIComponent(imageUrl)}`;
-            }
-            const waUrl = `https://wa.me/${phone}?text=${msg}`;
-            window.open(waUrl, '_blank');
-        }
-        // زر مشاركة واتساب الجديد (يرسل فقط اسم وصورة المنتج للرقم المطلوب)
-        function shareProductWhatsapp(name, imageUrl) {
-            const phone = '01121366757';
-            let msg = `منتج: ${decodeURIComponent(name)}`;
-            if(imageUrl && imageUrl !== 'undefined') {
-                msg += `%0Aصورة المنتج: ${decodeURIComponent(imageUrl)}`;
-            }
-            const waUrl = `https://wa.me/${phone}?text=${msg}`;
-            window.open(waUrl, '_blank');
         }
     </script>
 </body>
