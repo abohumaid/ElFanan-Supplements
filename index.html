@@ -411,17 +411,19 @@
         function listenToProducts() {
             db.ref('gymProducts').on('value', snapshot => {
                 const val = snapshot.val() || [];
-                // إذا كانت البيانات ككائن (مفتاح تلقائي)، حولها لمصفوفة
                 if (!Array.isArray(val)) {
                     products = Object.values(val);
                 } else {
                     products = val;
                 }
-                // إعادة عرض القسم الحالي
-                const activeSection = document.querySelector('.navbar li.active')?.getAttribute('data-section') || 'creatine';
-                renderProductsSection(activeSection);
-                // إذا كنا في لوحة الأدمن، حدث القائمة
-                if (document.getElementById('adminProductsList')) renderAdminProductsList();
+                // إذا كانت لوحة الأدمن ظاهرة، حدثها فقط
+                if (document.getElementById('adminProductsList')) {
+                    renderAdminProductsList();
+                } else {
+                    // إعادة عرض القسم الحالي
+                    const activeSection = document.querySelector('.navbar li.active')?.getAttribute('data-section') || 'creatine';
+                    renderProductsSection(activeSection);
+                }
             });
         }
         listenToProducts();
