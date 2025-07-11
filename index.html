@@ -461,11 +461,16 @@
                     // نسبة الخصم
                     let discount = getDiscountPercent(prod.priceBefore, prod.priceAfter);
                     let discountHtml = discount ? `<span style='background:#ff4444;color:#fff;padding:2px 8px;border-radius:6px;font-size:1rem;position:absolute;left:10px;top:10px;'>${discount}% OFF</span>` : '';
+                    // زر المشاركة
+                    let shareBtn = `<button class="share-btn" title="مشاركة المنتج" onclick="shareProduct('${encodeURIComponent(prod.name)}','${encodeURIComponent(prod.priceAfter)}','${encodeURIComponent(prod.images[0]||'')}')" style="position:absolute;top:10px;right:10px;background:#25d366;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10;">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" stroke="#fff" stroke-width="2"/><path d="M12 16V4m0 0l-4 4m4-4l4 4" stroke="#fff" stroke-width="2"/></svg>
+                    </button>`;
                     html += `
-                    <div class='product-card' style='overflow:visible;'>
+                    <div class='product-card' style='overflow:visible;position:relative;'>
                         <div style='position:relative;'>
                             ${slider}
                             ${discountHtml}
+                            ${shareBtn}
                         </div>
                         <div class='product-title'>${prod.name}</div>
                         <div class='product-desc'>${prod.desc}</div>
@@ -748,6 +753,17 @@
             whatsappBtn.onclick = function() {
                 window.open('https://wa.me/201159768514', '_blank');
             };
+        }
+    </script>
+    <script>
+        function shareProduct(name, price, imageUrl) {
+            const phone = '01159768514';
+            let msg = `منتج: ${decodeURIComponent(name)}%0Aالسعر: ${decodeURIComponent(price)} ج.م`;
+            if(imageUrl && imageUrl !== 'undefined') {
+                msg += `%0Aصورة المنتج: ${decodeURIComponent(imageUrl)}`;
+            }
+            const waUrl = `https://wa.me/${phone}?text=${msg}`;
+            window.open(waUrl, '_blank');
         }
     </script>
 </body>
