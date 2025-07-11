@@ -583,6 +583,8 @@
             editingProductIndex = editIndex;
             let prod = {name:'', desc:'', images:[], priceBefore:'', priceAfter:'', type:productTypes[0].key};
             if(editIndex !== null) prod = products[editIndex];
+            // متغير للاحتفاظ بكل الصور الحالية والجديدة
+            let currentImages = prod.images ? [...prod.images] : [];
             let html = `<form class='product-form' id='productForm'>
                 <label>Product Name</label>
                 <input type='text' name='name' value='${prod.name || ''}' required>
@@ -604,10 +606,10 @@
             </form>`;
             document.getElementById('productFormContainer').innerHTML = html;
             // عرض الصور الحالية عند التعديل
-            if(editIndex!==null && prod.images && prod.images.length) {
-                showPreviewImages(prod.images);
+            if(currentImages.length) {
+                showPreviewImages(currentImages);
             }
-            // معاينة الصور الجديدة
+            // معاينة الصور الجديدة وإضافتها للقديمة
             document.querySelector('#productForm input[name="images"]').onchange = function(e) {
                 const files = Array.from(e.target.files);
                 if(files.length) {
@@ -619,7 +621,8 @@
                         });
                     });
                     Promise.all(readers).then(imgs => {
-                        showPreviewImages(imgs);
+                        currentImages = currentImages.concat(imgs);
+                        showPreviewImages(currentImages);
                     });
                 }
             };
@@ -630,30 +633,12 @@
                 let newProd = {
                     name: fd.get('name'),
                     desc: fd.get('desc'),
-                    images: [],
+                    images: currentImages,
                     priceBefore: fd.get('priceBefore'),
                     priceAfter: fd.get('priceAfter'),
                     type: fd.get('type')
                 };
-                // صور
-                const files = this.images.files;
-                if(files.length) {
-                    const readers = Array.from(files).map(file => {
-                        return new Promise(res => {
-                            const reader = new FileReader();
-                            reader.onload = ev => res(ev.target.result);
-                            reader.readAsDataURL(file);
-                        });
-                    });
-                    Promise.all(readers).then(imgs => {
-                        newProd.images = imgs;
-                        saveProductData(newProd);
-                    });
-                } else if(editIndex!==null) {
-                    // عند التعديل بدون تغيير الصور
-                    newProd.images = prod.images;
-                    saveProductData(newProd);
-                }
+                saveProductData(newProd);
             };
         }
         function showPreviewImages(imgs) {
