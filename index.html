@@ -477,16 +477,15 @@
             } else {
                 html += `<div class='products-grid'>`;
                 filtered.forEach((prod, idx) => {
-                    // لكل بطاقة، أضف تأخير بسيط لتسلسل الأنيميشن
                     const fadeDelay = idx * 60; // 60ms لكل بطاقة
                     // سلايدر صور
                     let slider = '';
                     if(prod.images && prod.images.length > 1) {
                         slider = `
                         <div class='img-slider' style='position:relative;'>
-                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")'>
-                            <button class='slider-btn left' onclick='event.stopPropagation();changeSlide(this,${idx},-1)' style='position:absolute;left:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#ffb300;font-size:1.2rem;cursor:pointer;border-radius:4px;'>‹</button>
-                            <button class='slider-btn right' onclick='event.stopPropagation();changeSlide(this,${idx},1)' style='position:absolute;right:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#ffb300;font-size:1.2rem;cursor:pointer;border-radius:4px;'>›</button>
+                            <img src='${prod.images[0]}' class='slider-img' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")' data-slider-idx='0' data-prod-idx='${idx}'>
+                            <button class='slider-btn left' onclick='event.stopPropagation();window.changeSlide(this,${idx},-1)' style='position:absolute;left:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#ffb300;font-size:1.2rem;cursor:pointer;border-radius:4px;'>‹</button>
+                            <button class='slider-btn right' onclick='event.stopPropagation();window.changeSlide(this,${idx},1)' style='position:absolute;right:2px;top:50%;transform:translateY(-50%);background:#222a;padding:2px 8px;border:none;color:#ffb300;font-size:1.2rem;cursor:pointer;border-radius:4px;'>›</button>
                         </div>`;
                     } else {
                         slider = `<img src='${prod.images[0] || ''}' style='cursor:pointer;' onclick='showImageModal("${prod.images[0]}")'>`;
@@ -514,16 +513,26 @@
             container.innerHTML = html;
         }
         // --- سلايدر الصور ---
-        window.changeSlide = function(btn, prodIdx, dir) {
+        window.changeSlide = function(btn, filteredIdx, dir) {
+            // ابحث عن كل المنتجات المعروضة حاليًا
             const section = document.querySelector('.navbar li.active').getAttribute('data-section');
-            const filtered = products.filter(p => p.type === section && !p.hidden);
-            const prod = filtered[prodIdx];
+            const searchTerm = (window.currentSearchTerm || '').toLowerCase();
+            const filtered = products.filter(p => 
+                p.type === section && 
+                !p.hidden &&
+                (
+                    !searchTerm ||
+                    (p.name && p.name.toLowerCase().includes(searchTerm)) ||
+                    (p.desc && p.desc.toLowerCase().includes(searchTerm))
+                )
+            );
+            const prod = filtered[filteredIdx];
             let img = btn.parentElement.querySelector('.slider-img');
-            let current = prod._sliderIndex || 0;
+            let current = parseInt(img.getAttribute('data-slider-idx')) || 0;
             current = (current + dir + prod.images.length) % prod.images.length;
-            prod._sliderIndex = current;
             img.src = prod.images[current];
             img.setAttribute('onclick', `showImageModal("${prod.images[current]}")`);
+            img.setAttribute('data-slider-idx', current);
         }
         window.showImageModal = showImageModal;
         // نافذة تسجيل دخول الأدمن
